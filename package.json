@@ -1,0 +1,46 @@
+{
+  "name": "happy-hand-wedding-deck",
+  "version": "1.0.0",
+  "description": "Свадебная коктейльная колода: 36 карт и двусторонняя печать на А3",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test scripts/deck.test.mjs",
+    "test:browser": "node scripts/browser-test.mjs",
+    "export:pdf": "node scripts/export-pdf.mjs",
+    "format": "prettier --write index.html vite.config.js src scripts README.md",
+    "format:check": "prettier --check index.html vite.config.js src scripts README.md"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/horaanlika-droid/menu.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/horaanlika-droid/menu/issues"
+  },
+  "homepage": "https://github.com/horaanlika-droid/menu#readme",
+  "dependencies": {
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "@fontsource/great-vibes": "^5.3.0",
+    "@fontsource/manrope": "^5.3.0",
+    "@fontsource/noto-sans-symbols-2": "^5.3.0",
+    "html-to-image": "^1.11.13",
+    "lucide-react": "^1.72.0",
+    "pdf-lib": "^1.17.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@sparticuz/chromium": "^153.0.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "playwright-core": "^1.65.0",
+    "prettier": "^3.10.1",
+    "vite": "^8.3.8"
+  },
+  "private": true,
+  "type": "module"
+}
