@@ -142,7 +142,15 @@ function Modal({ children, titleId, onClose, className = "" }) {
   );
 }
 
-function CardDetail({ card, settings, onClose, onSave, onReset, onNext }) {
+function CardDetail({
+  card,
+  cardPosition,
+  settings,
+  onClose,
+  onSave,
+  onReset,
+  onNext,
+}) {
   const id = useId();
   const [editing, setEditing] = useState(false);
   const [back, setBack] = useState(false);
@@ -260,7 +268,10 @@ function CardDetail({ card, settings, onClose, onSave, onReset, onNext }) {
           </form>
         ) : (
           <>
-            <h2 id={id} className="modal-title">
+            <h2
+              id={id}
+              className={`modal-title ${card.category !== "interactive" ? "cocktail-title" : ""}`}
+            >
               {card.title}
             </h2>
             <p className="detail-reference">{card.reference}</p>
@@ -307,7 +318,9 @@ function CardDetail({ card, settings, onClose, onSave, onReset, onNext }) {
             >
               <ChevronLeft size={18} />
             </button>
-            <span>{DECK.findIndex((c) => c.id === card.id) + 1} / 36</span>
+            <span>
+              {cardPosition + 1} / {DECK.length}
+            </span>
             <button
               className="icon-button"
               aria-label="Следующая карта"
@@ -524,6 +537,8 @@ export default function App() {
   const [filter, setFilter] = useState("all");
   const [showBack, setShowBack] = useState(false);
   const [visibleCount, setVisibleCount] = useState(12);
+  const [shuffleOrder, setShuffleOrder] = useState(null);
+  const [shuffleVersion, setShuffleVersion] = useState(0);
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState("");
   const [busy, setBusy] = useState(false);
@@ -533,11 +548,18 @@ export default function App() {
   const downloadLock = useRef(false);
   const modalOpener = useRef(null);
   const cards = DECK.map((card) => ({ ...card, ...edits[card.id] }));
-  const filtered = cards.filter(
+  const cardsById = new Map(cards.map((card) => [card.id, card]));
+  const orderedCards = shuffleOrder
+    ? shuffleOrder.map((id) => cardsById.get(id)).filter(Boolean)
+    : cards;
+  const filtered = orderedCards.filter(
     (card) => filter === "all" || card.category === filter,
   );
   const selectedCard =
     modal?.type === "card" ? cards.find((card) => card.id === modal.id) : null;
+  const selectedCardIndex = selectedCard
+    ? orderedCards.findIndex((card) => card.id === selectedCard.id)
+    : -1;
 
   useEffect(() => {
     try {
@@ -564,6 +586,25 @@ export default function App() {
   function selectFilter(id) {
     setFilter(id);
     setVisibleCount(12);
+  }
+  function shuffleDeck() {
+    const shuffled = [...orderedCards];
+    for (let index = shuffled.length - 1; index > 0; index--) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      [shuffled[index], shuffled[swapIndex]] = [
+        shuffled[swapIndex],
+        shuffled[index],
+      ];
+    }
+    if (
+      shuffled.length > 1 &&
+      shuffled.every((card, index) => card.id === orderedCards[index].id)
+    ) {
+      [shuffled[0], shuffled[1]] = [shuffled[1], shuffled[0]];
+    }
+    setShuffleOrder(shuffled.map((card) => card.id));
+    setShuffleVersion((version) => version + 1);
+    notify("Колода перемешана. Новый порядок — новые совпадения.");
   }
   function randomCard() {
     const card = filtered[Math.floor(Math.random() * filtered.length)];
@@ -754,13 +795,23 @@ export default function App() {
                   <br />
                   Выбирайте по вкусу. Или по велению сердца.
                 </p>
-                <button
-                  className="button secondary random-button"
-                  onClick={randomCard}
-                >
-                  <Shuffle size={16} />
-                  Доверьтесь случаю
-                </button>
+                <div className="deck-actions">
+                  <button
+                    className="button primary shuffle-button"
+                    onClick={shuffleDeck}
+                    aria-label="Перемешать колоду"
+                  >
+                    <Shuffle size={16} />
+                    Перемешать
+                  </button>
+                  <button
+                    className="button secondary random-button"
+                    onClick={randomCard}
+                  >
+                    <ArrowUpRight size={16} />
+                    Случайная карта
+                  </button>
+                </div>
               </div>
             </div>
             <div className="deck-controls">
@@ -814,7 +865,8 @@ export default function App() {
               {filtered.slice(0, visibleCount).map((card, i) => (
                 <article
                   className="card-tile"
-                  key={card.id}
+                  key={`${shuffleVersion}-${card.id}`}
+                  data-card-id={card.id}
                   style={{ "--tile-delay": `${Math.min(i, 7) * 25}ms` }}
                 >
                   <button
@@ -986,6 +1038,7 @@ export default function App() {
         <CardDetail
           key={selectedCard.id}
           card={selectedCard}
+          cardPosition={selectedCardIndex}
           settings={settings}
           onClose={closeModal}
           onSave={(id, edit) => {
@@ -994,10 +1047,14 @@ export default function App() {
           }}
           onReset={resetCard}
           onNext={(direction) => {
-            const index = cards.findIndex((c) => c.id === selectedCard.id);
+            const index = orderedCards.findIndex(
+              (card) => card.id === selectedCard.id,
+            );
             setModal({
               type: "card",
-              id: cards[(index + direction + 36) % 36].id,
+              id: orderedCards[
+                (index + direction + orderedCards.length) % orderedCards.length
+              ].id,
             });
           }}
         />

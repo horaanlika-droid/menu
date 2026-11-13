@@ -15,11 +15,9 @@ export async function exportPdf({ edits, settings, onProgress }) {
   await document.fonts.ready;
   let presetBytes;
   try {
-    const response = await fetch(
-      settings.backStyle === "light"
-        ? "/koloda-a3-light.pdf"
-        : "/koloda-a3.pdf",
-    );
+    const presetFile =
+      settings.backStyle === "light" ? "koloda-a3-light.pdf" : "koloda-a3.pdf";
+    const response = await fetch(`${import.meta.env.BASE_URL}${presetFile}`);
     if (response.ok && response.headers.get("content-type")?.includes("pdf"))
       presetBytes = await response.arrayBuffer();
   } catch {

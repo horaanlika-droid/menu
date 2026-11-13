@@ -19,11 +19,58 @@ try {
   assert.equal(await page.locator(".card-tile").count(), 12);
   assert.equal(await page.locator(".print-sheet").count(), 4);
   assert.equal(await page.locator(".print-card").count(), 72);
+  const cocktailTypography = await page
+    .locator(".card-grid .card-title")
+    .first()
+    .evaluate((el) => ({
+      family: getComputedStyle(el).fontFamily,
+      weight: getComputedStyle(el).fontWeight,
+    }));
+  assert.match(cocktailTypography.family, /Helvetica/i);
+  assert.equal(cocktailTypography.weight, "700");
   assert.ok(
     await page.evaluate(() =>
       document.fonts.check('20px "Noto Sans Symbols 2"', "♥♦♠♣"),
     ),
   );
+
+  await page.getByRole("button", { name: /^Разложить всю колоду/ }).click();
+  const originalOrder = await page
+    .locator(".card-grid .card-tile")
+    .evaluateAll((tiles) => tiles.map((tile) => tile.dataset.cardId));
+  const printOrder = await page
+    .locator(".print-card")
+    .evaluateAll((cards) => cards.map((card) => card.dataset.cardId));
+  await page
+    .getByRole("button", { name: "Перемешать колоду", exact: true })
+    .click();
+  const shuffledOrder = await page
+    .locator(".card-grid .card-tile")
+    .evaluateAll((tiles) => tiles.map((tile) => tile.dataset.cardId));
+  assert.equal(shuffledOrder.length, 36);
+  assert.equal(new Set(shuffledOrder).size, 36);
+  assert.notDeepEqual(shuffledOrder, originalOrder);
+  assert.deepEqual(
+    await page
+      .locator(".print-card")
+      .evaluateAll((cards) => cards.map((card) => card.dataset.cardId)),
+    printOrder,
+    "shuffling the screen order must not change the print layout",
+  );
+  await page.locator(".card-open").first().click();
+  assert.equal(
+    await page.locator(".detail-navigation>span").textContent(),
+    "1 / 36",
+  );
+  await page
+    .getByRole("button", { name: "Следующая карта", exact: true })
+    .click();
+  assert.equal(
+    await page.locator(".detail-navigation>span").textContent(),
+    "2 / 36",
+  );
+  await page.keyboard.press("Escape");
+  await page.reload({ waitUntil: "networkidle" });
 
   for (const [label, count] of [
     ["Крашеры", 3],
@@ -41,13 +88,28 @@ try {
       "filters must never truncate the print deck",
     );
   }
+  const interactiveTypography = await page
+    .locator(".card-grid .card-title")
+    .first()
+    .evaluate((el) => ({
+      family: getComputedStyle(el).fontFamily,
+      weight: getComputedStyle(el).fontWeight,
+    }));
+  assert.match(interactiveTypography.family, /Great Vibes/i);
+  assert.equal(interactiveTypography.weight, "400");
   await page
-    .getByRole("button", { name: "Доверьтесь случаю", exact: true })
+    .getByRole("button", { name: "Случайная карта", exact: true })
     .click();
   assert.ok(
     (await page.locator(".detail-content>.eyebrow").textContent()).includes(
       "Интерактив",
     ),
+  );
+  assert.equal(
+    await page
+      .locator(".detail-content .modal-title")
+      .evaluate((el) => el.classList.contains("cocktail-title")),
+    false,
   );
   await page.keyboard.press("Escape");
   assert.equal(await page.getByRole("dialog").count(), 0);
@@ -63,6 +125,12 @@ try {
   await page.getByRole("button", { name: /^Разложить всю колоду/ }).click();
   assert.equal(await page.locator(".card-tile").count(), 36);
   await page.locator(".card-open").first().click();
+  assert.equal(
+    await page
+      .locator(".detail-content .modal-title")
+      .evaluate((el) => el.classList.contains("cocktail-title")),
+    true,
+  );
   await page
     .getByRole("button", { name: "Следующая карта", exact: true })
     .click();
@@ -242,6 +310,17 @@ try {
     overflow: [...document.querySelectorAll(".print-card .card-content")]
       .filter((el) => el.scrollHeight > el.clientHeight + 1)
       .map((el) => el.querySelector(".card-title").textContent),
+    brokenWords: [...document.querySelectorAll(".print-card .cocktail-title")]
+      .filter((el) => {
+        const node = el.firstChild;
+        return [...node.textContent.matchAll(/\S+/g)].some((match) => {
+          const range = document.createRange();
+          range.setStart(node, match.index);
+          range.setEnd(node, match.index + match[0].length);
+          return range.getClientRects().length > 1;
+        });
+      })
+      .map((el) => el.textContent),
   }));
   assert.deepEqual(
     printMetrics.sheets.map((s) => s.side),
