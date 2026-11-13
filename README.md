@@ -28,7 +28,7 @@
 
 ## GitHub Pages
 
-После слияния изменений в `main` GitHub Actions соберёт приложение и развернёт его на [horaanlika-droid.github.io/menu](https://horaanlika-droid.github.io/menu/). Workflow находится в `.github/workflows/pages.yml`; Vite собирает приложение с корректным префиксом `/menu/`, включая локальные PDF и favicon. Для первого запуска в Settings → Pages выберите источник **GitHub Actions**, если он ещё не выбран.
+После слияния изменений в `main` GitHub Actions соберёт приложение и развернёт его на [horaanlika-droid.github.io/menu](https://horaanlika-droid.github.io/menu/). Workflow находится в `.github/workflows/pages.yml`; Vite собирает приложение с корректным префиксом `/menu/`, включая локальные PDF и favicon. **Важно:** в Settings → Pages → Build and deployment → Source должно быть выбрано **GitHub Actions**, а не «Deploy from a branch». В режиме «Deploy from a branch» GitHub отдаёт исходный `index.html` без сборки, и страница остаётся пустой.
 
 ## Приложение
 
