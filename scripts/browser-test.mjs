@@ -34,6 +34,44 @@ try {
     ),
   );
 
+  await page.getByRole("button", { name: /^Разложить всю колоду/ }).click();
+  const originalOrder = await page
+    .locator(".card-grid .card-tile")
+    .evaluateAll((tiles) => tiles.map((tile) => tile.dataset.cardId));
+  const printOrder = await page
+    .locator(".print-card")
+    .evaluateAll((cards) => cards.map((card) => card.dataset.cardId));
+  await page
+    .getByRole("button", { name: "Перемешать колоду", exact: true })
+    .click();
+  const shuffledOrder = await page
+    .locator(".card-grid .card-tile")
+    .evaluateAll((tiles) => tiles.map((tile) => tile.dataset.cardId));
+  assert.equal(shuffledOrder.length, 36);
+  assert.equal(new Set(shuffledOrder).size, 36);
+  assert.notDeepEqual(shuffledOrder, originalOrder);
+  assert.deepEqual(
+    await page
+      .locator(".print-card")
+      .evaluateAll((cards) => cards.map((card) => card.dataset.cardId)),
+    printOrder,
+    "shuffling the screen order must not change the print layout",
+  );
+  await page.locator(".card-open").first().click();
+  assert.equal(
+    await page.locator(".detail-navigation>span").textContent(),
+    "1 / 36",
+  );
+  await page
+    .getByRole("button", { name: "Следующая карта", exact: true })
+    .click();
+  assert.equal(
+    await page.locator(".detail-navigation>span").textContent(),
+    "2 / 36",
+  );
+  await page.keyboard.press("Escape");
+  await page.reload({ waitUntil: "networkidle" });
+
   for (const [label, count] of [
     ["Крашеры", 3],
     ["С пузырьками", 6],
@@ -60,7 +98,7 @@ try {
   assert.match(interactiveTypography.family, /Great Vibes/i);
   assert.equal(interactiveTypography.weight, "400");
   await page
-    .getByRole("button", { name: "Доверьтесь случаю", exact: true })
+    .getByRole("button", { name: "Случайная карта", exact: true })
     .click();
   assert.ok(
     (await page.locator(".detail-content>.eyebrow").textContent()).includes(
