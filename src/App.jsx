@@ -260,7 +260,10 @@ function CardDetail({ card, settings, onClose, onSave, onReset, onNext }) {
           </form>
         ) : (
           <>
-            <h2 id={id} className="modal-title">
+            <h2
+              id={id}
+              className={`modal-title ${card.category !== "interactive" ? "cocktail-title" : ""}`}
+            >
               {card.title}
             </h2>
             <p className="detail-reference">{card.reference}</p>

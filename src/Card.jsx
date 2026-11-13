@@ -3,6 +3,10 @@ import { SUITS, PRINT } from "./data";
 
 export function Card({ card, back = false, settings, className = "" }) {
   const suit = SUITS[card.suit];
+  const titleNeedsSmallerSize =
+    card.title.length > 26 ||
+    (card.category !== "interactive" &&
+      card.title.split(/\s+/).some((word) => word.length > 8));
   if (back)
     return (
       <div
@@ -50,7 +54,7 @@ export function Card({ card, back = false, settings, className = "" }) {
       <div className="card-content">
         <span className="card-reference">{card.reference}</span>
         <h3
-          className={`card-title ${card.title.length > 26 ? "long-title" : ""}`}
+          className={`card-title ${card.category !== "interactive" ? "cocktail-title" : ""} ${titleNeedsSmallerSize ? "long-title" : ""}`}
         >
           {card.title}
         </h3>

@@ -1280,6 +1280,10 @@ em {
 .modal-title em {
   color: var(--wine);
 }
+.cocktail-title {
+  font-family: "Helvetica", Arial, sans-serif;
+  font-weight: 700;
+}
 .card-modal {
   display: grid;
   grid-template-columns: 0.95fr 1.05fr;

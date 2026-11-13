@@ -19,6 +19,15 @@ try {
   assert.equal(await page.locator(".card-tile").count(), 12);
   assert.equal(await page.locator(".print-sheet").count(), 4);
   assert.equal(await page.locator(".print-card").count(), 72);
+  const cocktailTypography = await page
+    .locator(".card-grid .card-title")
+    .first()
+    .evaluate((el) => ({
+      family: getComputedStyle(el).fontFamily,
+      weight: getComputedStyle(el).fontWeight,
+    }));
+  assert.match(cocktailTypography.family, /Helvetica/i);
+  assert.equal(cocktailTypography.weight, "700");
   assert.ok(
     await page.evaluate(() =>
       document.fonts.check('20px "Noto Sans Symbols 2"', "♥♦♠♣"),
@@ -41,6 +50,15 @@ try {
       "filters must never truncate the print deck",
     );
   }
+  const interactiveTypography = await page
+    .locator(".card-grid .card-title")
+    .first()
+    .evaluate((el) => ({
+      family: getComputedStyle(el).fontFamily,
+      weight: getComputedStyle(el).fontWeight,
+    }));
+  assert.match(interactiveTypography.family, /Great Vibes/i);
+  assert.equal(interactiveTypography.weight, "400");
   await page
     .getByRole("button", { name: "Доверьтесь случаю", exact: true })
     .click();
@@ -48,6 +66,12 @@ try {
     (await page.locator(".detail-content>.eyebrow").textContent()).includes(
       "Интерактив",
     ),
+  );
+  assert.equal(
+    await page
+      .locator(".detail-content .modal-title")
+      .evaluate((el) => el.classList.contains("cocktail-title")),
+    false,
   );
   await page.keyboard.press("Escape");
   assert.equal(await page.getByRole("dialog").count(), 0);
@@ -63,6 +87,12 @@ try {
   await page.getByRole("button", { name: /^Разложить всю колоду/ }).click();
   assert.equal(await page.locator(".card-tile").count(), 36);
   await page.locator(".card-open").first().click();
+  assert.equal(
+    await page
+      .locator(".detail-content .modal-title")
+      .evaluate((el) => el.classList.contains("cocktail-title")),
+    true,
+  );
   await page
     .getByRole("button", { name: "Следующая карта", exact: true })
     .click();
@@ -242,6 +272,17 @@ try {
     overflow: [...document.querySelectorAll(".print-card .card-content")]
       .filter((el) => el.scrollHeight > el.clientHeight + 1)
       .map((el) => el.querySelector(".card-title").textContent),
+    brokenWords: [...document.querySelectorAll(".print-card .cocktail-title")]
+      .filter((el) => {
+        const node = el.firstChild;
+        return [...node.textContent.matchAll(/\S+/g)].some((match) => {
+          const range = document.createRange();
+          range.setStart(node, match.index);
+          range.setEnd(node, match.index + match[0].length);
+          return range.getClientRects().length > 1;
+        });
+      })
+      .map((el) => el.textContent),
   }));
   assert.deepEqual(
     printMetrics.sheets.map((s) => s.side),
